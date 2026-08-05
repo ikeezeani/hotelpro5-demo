@@ -1,0 +1,22 @@
+[
+  { "code": "USD", "symbol": "$", "name": "US Dollar" },
+  { "code": "EUR", "symbol": "€", "name": "Euro" },
+  { "code": "GBP", "symbol": "£", "name": "British Pound" },
+  { "code": "NGN", "symbol": "₦", "name": "Nigerian Naira" },
+  { "code": "ZAR", "symbol": "R", "name": "South African Rand" },
+  { "code": "KES", "symbol": "KSh", "name": "Kenyan Shilling" },
+  { "code": "GHS", "symbol": "GH₵", "name": "Ghanaian Cedi" },
+  { "code": "EGP", "symbol": "E£", "name": "Egyptian Pound" },
+  { "code": "INR", "symbol": "₹", "name": "Indian Rupee" },
+  { "code": "AED", "symbol": "د.إ", "name": "UAE Dirham" },
+  { "code": "SAR", "symbol": "﷼", "name": "Saudi Riyal" },
+  { "code": "CAD", "symbol": "CA$", "name": "Canadian Dollar" },
+  { "code": "AUD", "symbol": "A$", "name": "Australian Dollar" },
+  { "code": "JPY", "symbol": "¥", "name": "Japanese Yen" },
+  { "code": "CNY", "symbol": "¥", "name": "Chinese Yuan" },
+  { "code": "BRL", "symbol": "R$", "name": "Brazilian Real" },
+  { "code": "MXN", "symbol": "MX$", "name": "Mexican Peso" },
+  { "code": "SGD", "symbol": "S$", "name": "Singapore Dollar" },
+  { "code": "CHF", "symbol": "CHF", "name": "Swiss Franc" },
+  { "code": "THB", "symbol": "฿", "name": "Thai Baht" }
+]
