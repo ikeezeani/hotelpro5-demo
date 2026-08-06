@@ -11,20 +11,22 @@ const MAX_ATTEMPTS = 30;
 const DELAY_MS = 2000;
 
 async function waitForDb() {
+  const useSSL = String(process.env.DB_SSL).toLowerCase() === 'true';
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
     try {
       const conn = await mysql.createConnection({
         host: process.env.DB_HOST || 'localhost',
         port: process.env.DB_PORT || 3306,
         user: process.env.DB_USER || 'root',
-        password: process.env.DB_PASSWORD || ''
+        password: process.env.DB_PASSWORD || '',
+        ...(useSSL ? { ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true } } : {})
       });
       await conn.ping();
       await conn.end();
       console.log('✔ Database is reachable.');
       return;
     } catch (err) {
-      console.log(`Waiting for database... (attempt ${attempt}/${MAX_ATTEMPTS}) ${err.code || err.message}`);
+      console.log(`Waiting for database... (attempt ${attempt}/${MAX_ATTEMPTS}) code=${err.code || 'n/a'} message=${err.message}`);
       await new Promise((r) => setTimeout(r, DELAY_MS));
     }
   }
