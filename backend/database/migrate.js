@@ -11,13 +11,15 @@ async function migrate() {
   const schemaPath = path.join(__dirname, 'schema.sql');
   const sql = fs.readFileSync(schemaPath, 'utf8');
 
+  const useSSL = String(process.env.DB_SSL).toLowerCase() === 'true';
   const connection = await mysql.createConnection({
     host: process.env.DB_HOST || 'localhost',
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'hotelpro5',
-    multipleStatements: true
+    multipleStatements: true,
+    ...(useSSL ? { ssl: { minVersion: 'TLSv1.2', rejectUnauthorized: true } } : {})
   });
 
   console.log('Applying schema.sql ...');
