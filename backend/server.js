@@ -1,7 +1,5 @@
 require('dotenv').config();
-
 const express = require('express');
-const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
@@ -19,7 +17,6 @@ app.use(cors({ origin: process.env.CLIENT_URL || '*', credentials: true }));
 app.use(compression());
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
-
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', {
   stream: { write: (msg) => logger.info(msg.trim()) }
 }));
@@ -32,13 +29,8 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-/* -------------------------------- API Routes -------------------------------- */
-app.get('/api/health', (req, res) => res.json({ 
-  status: 'ok', 
-  app: 'HotelPro 5.0', 
-  version: '5.0.0', 
-  time: new Date().toISOString() 
-}));
+/* -------------------------------- Routes ---------------------------------- */
+app.get('/api/health', (req, res) => res.json({ status: 'ok', version: '5.0.0', time: new Date().toISOString() }));
 
 app.use('/api/setup', require('./routes/setup'));
 app.use('/api/auth', require('./routes/auth'));
@@ -54,27 +46,15 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/payments', require('./routes/payments'));
 
-/* -------------------------- Static Files + React Router -------------------------- */
-// Serve built React frontend (must come AFTER all API routes)
-app.use(express.static(path.join(__dirname, 'public')));
-
-// React Router catch-all — send index.html for all non-API routes
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-/* -------------------------- Error Handling -------------------------- */
 app.use(notFound);
 app.use(errorHandler);
 
-/* -------------------------- Background Jobs -------------------------- */
 const { scheduleLowStockDigest } = require('./jobs/lowStockDigest');
 scheduleLowStockDigest();
 
-/* -------------------------- Start Server -------------------------- */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  logger.info(`🚀 HotelPro 5.0 API listening on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
+  logger.info(`HotelPro 5.0 API listening on port ${PORT} [${process.env.NODE_ENV || 'development'}]`);
 });
 
 module.exports = app;
