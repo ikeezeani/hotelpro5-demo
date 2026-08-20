@@ -58,7 +58,6 @@ router.delete('/room-types/:id', authorize('front_desk', 'write'), async (req, r
 
 /* -------------------------------- Rooms ------------------------------ */
 
-// GET /api/front-desk/rooms — room board with live status
 router.get('/rooms', async (req, res, next) => {
   try {
     const { status } = req.query;
@@ -137,6 +136,13 @@ router.post('/check-in', authorize('front_desk', 'write'), async (req, res, next
     if (!room) throw new AppError('Room not found.', 404);
     if (room.status === 'occupied') throw new AppError('Room is currently occupied.', 409);
 
+    // Critical correctness check: the room being assigned must match what the
+    // guest actually booked. Without this, check-in could silently hand a
+    // guest a cheaper/different room type than their reservation's rate reflects.
+    if (room.room_type_id !== reservation.room_type_id) {
+      throw new AppError('This room does not match the room type on the reservation. Select a room of the correct type.', 409);
+    }
+
     await conn.query('UPDATE reservations SET status = "checked_in", room_id = ? WHERE id = ?', [roomId, reservationId]);
     await conn.query('UPDATE rooms SET status = "occupied" WHERE id = ?', [roomId]);
 
@@ -178,6 +184,7 @@ router.post('/check-in', authorize('front_desk', 'write'), async (req, res, next
 router.post('/check-out', authorize('front_desk', 'write'), async (req, res, next) => {
   const conn = await pool.getConnection();
   try {
+    await conn.beginTransaction();
     const { stayId } = req.body;
     const [[stay]] = await conn.query('SELECT * FROM stays WHERE id = ? FOR UPDATE', [stayId]);
     if (!stay) throw new AppError('Stay not found.', 404);
@@ -199,7 +206,6 @@ router.post('/check-out', authorize('front_desk', 'write'), async (req, res, nex
       }
     }
 
-    await conn.beginTransaction();
     await conn.query(
       'UPDATE stays SET status = "checked_out", actual_check_out = NOW(), checked_out_by = ? WHERE id = ?',
       [req.user.id, stayId]

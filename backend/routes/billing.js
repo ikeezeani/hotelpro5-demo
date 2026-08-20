@@ -68,17 +68,29 @@ router.get('/invoices/:id', async (req, res, next) => {
 router.post('/invoices', authorize('billing', 'write'), async (req, res, next) => {
   const conn = await pool.getConnection();
   try {
-    const { folioId, posOrderId, guestId, taxPercent = 0, serviceChargePercent = 0, discountAmount = 0, currencyCode } = req.body;
+    const { folioId, posOrderId, taxPercent = 0, serviceChargePercent = 0, discountAmount = 0, currencyCode } = req.body;
     if (!folioId && !posOrderId) throw new AppError('Provide a folioId or posOrderId to invoice.', 422);
 
     let subtotal = 0;
+    // The frontend may or may not know the guest — always resolve it
+    // server-side from the folio/order itself so it's never left blank.
+    let guestId = req.body.guestId || null;
+
     if (folioId) {
       const [charges] = await conn.query('SELECT amount FROM folio_charges WHERE folio_id = ?', [folioId]);
       subtotal = charges.reduce((sum, c) => sum + Number(c.amount), 0);
+      if (!guestId) {
+        const [[folioGuest]] = await conn.query(
+          `SELECT s.guest_id FROM folios f JOIN stays s ON s.id = f.stay_id WHERE f.id = ?`,
+          [folioId]
+        );
+        guestId = folioGuest?.guest_id || null;
+      }
     } else {
-      const [[order]] = await conn.query('SELECT subtotal FROM pos_orders WHERE id = ?', [posOrderId]);
+      const [[order]] = await conn.query('SELECT subtotal, guest_id FROM pos_orders WHERE id = ?', [posOrderId]);
       if (!order) throw new AppError('POS order not found.', 404);
       subtotal = Number(order.subtotal);
+      if (!guestId) guestId = order.guest_id || null;
     }
 
     const taxAmount = money(subtotal * (taxPercent / 100));
@@ -91,7 +103,7 @@ router.post('/invoices', authorize('billing', 'write'), async (req, res, next) =
       `INSERT INTO invoices
        (invoice_number, folio_id, pos_order_id, guest_id, subtotal, tax_amount, service_charge, discount_amount, total_amount, balance_due, currency_code, issued_by)
        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [invoiceNumber, folioId || null, posOrderId || null, guestId || null, money(subtotal), taxAmount, serviceCharge, discountAmount, total, total, currencyCode || 'USD', req.user.id]
+      [invoiceNumber, folioId || null, posOrderId || null, guestId, money(subtotal), taxAmount, serviceCharge, discountAmount, total, total, currencyCode || 'USD', req.user.id]
     );
     await conn.commit();
     res.status(201).json({ id: result.insertId, invoiceNumber, total });
