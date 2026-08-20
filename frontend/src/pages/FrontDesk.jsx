@@ -26,12 +26,19 @@ export default function FrontDesk() {
 
   useEffect(load, []);
 
-  const checkIn = async (reservationId) => {
-    const availableRoom = rooms.find((r) => r.status === 'available');
-    if (!availableRoom) return toast.error('No available rooms to assign.');
+  const checkIn = async (reservation) => {
+    // Only offer a room whose type matches what the guest actually booked —
+    // assigning a mismatched room type silently would understate/overstate
+    // what they're charged relative to their reservation's rate.
+    const availableRoom = rooms.find(
+      (r) => r.status === 'available' && r.room_type_id === reservation.room_type_id
+    );
+    if (!availableRoom) {
+      return toast.error(`No available ${reservation.room_type_name} to assign. Check Settings \u2192 Rooms or free one up first.`);
+    }
     try {
-      await api.post('/front-desk/check-in', { reservationId, roomId: availableRoom.id });
-      toast.success(`Checked in to room ${availableRoom.room_number}`);
+      await api.post('/front-desk/check-in', { reservationId: reservation.id, roomId: availableRoom.id });
+      toast.success(`Checked in to room ${availableRoom.room_number} (${reservation.room_type_name})`);
       load();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Check-in failed.');
@@ -91,7 +98,7 @@ export default function FrontDesk() {
                   <td className="py-2 pr-4">{r.room_type_name}</td>
                   <td className="py-2 pr-4">{r.check_in_date}</td>
                   <td className="py-2 pr-4">{formatMoney(r.rate_per_night)}</td>
-                  <td className="py-2"><button className="btn-accent !py-1 !px-3" onClick={() => checkIn(r.id)}>Check in</button></td>
+                  <td className="py-2"><button className="btn-accent !py-1 !px-3" onClick={() => checkIn(r)}>Check in</button></td>
                 </tr>
               ))}
               {!pendingReservations.length && <tr><td colSpan={5} className="py-4 text-ink-700">No confirmed arrivals pending.</td></tr>}
