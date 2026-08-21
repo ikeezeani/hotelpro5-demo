@@ -24,6 +24,14 @@ export default function Billing() {
   };
   useEffect(load, []);
 
+  // A folio should only appear once in the quick-generate list. Once any
+  // non-void invoice already references it, generating another would create
+  // a duplicate bill for the same charges — so we filter those out here.
+  const invoicedFolioIds = new Set(
+    invoices.filter((inv) => inv.status !== 'void' && inv.folio_id).map((inv) => inv.folio_id)
+  );
+  const billableStays = inHouse.filter((s) => s.folio_id && !invoicedFolioIds.has(s.folio_id));
+
   const generateInvoice = async (folioId) => {
     try {
       const { data } = await api.post('/billing/invoices', { folioId });
@@ -54,12 +62,18 @@ export default function Billing() {
       <div className="card mb-6">
         <h2 className="font-semibold mb-3">Generate Invoice from Open Folio</h2>
         <div className="flex flex-wrap gap-2">
-          {inHouse.filter((s) => s.folio_id).map((s) => (
+          {billableStays.map((s) => (
             <button key={s.folio_id} className="btn-ghost" onClick={() => generateInvoice(s.folio_id)}>
               Room {s.room_number} — {s.first_name} {s.last_name}
             </button>
           ))}
-          {!inHouse.length && <p className="text-sm text-ink-700">No open folios right now.</p>}
+          {!billableStays.length && (
+            <p className="text-sm text-ink-700">
+              {inHouse.length
+                ? 'Every in-house folio already has an invoice — no duplicates needed.'
+                : 'No open folios right now.'}
+            </p>
+          )}
         </div>
       </div>
 
