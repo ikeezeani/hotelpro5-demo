@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Fragment } from 'react';
 import toast from 'react-hot-toast';
 import api from '../api/client';
 import { useSettings } from '../context/SettingsContext.jsx';
@@ -190,7 +190,7 @@ export default function Reservations() {
           </thead>
           <tbody>
             {reservations.map((r) => (
-              <>
+              <Fragment key={r.id}>
                 <tr key={r.id} className="border-b border-ink-900/5">
                   <td className="py-2 pr-4 font-mono text-xs">{r.confirmation_code}</td>
                   <td className="py-2 pr-4">{r.first_name} {r.last_name}</td>
@@ -257,7 +257,7 @@ export default function Reservations() {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
             {!reservations.length && <tr><td colSpan={7} className="py-4 text-ink-700">No reservations yet.</td></tr>}
           </tbody>
